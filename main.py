@@ -71,7 +71,7 @@ def get_hh_vacancies(languages, headers):
     """Получение вакансий, HH."""
     url = 'https://api.hh.ru/vacancies'
     month_ago = (date.today() - relativedelta(months=1)).strftime('%Y-%m-%d')
-    stats = {}
+    found_vacancies = {}
     region_code = 1
     results_on_page = 100
     for lang in languages:
@@ -97,11 +97,12 @@ def get_hh_vacancies(languages, headers):
             page += 1
             time.sleep(0.5)
 
-        stats[lang] = get_stats(
-            all_pages_vacancies, found, predict_rub_salary_hh
-        )
+        found_vacancies[lang] = {
+            'vacancies': all_pages_vacancies,
+            'found': found
+        }
 
-    return stats
+    return found_vacancies
 
 
 def get_sj_vacancies(languages, headers):
@@ -112,7 +113,7 @@ def get_sj_vacancies(languages, headers):
     qualification = 4
     town_code = 4
     results_on_page = 10
-    stats = {}
+    found_vacancies = {}
     for lang in languages:
         page = 0
         more = True
@@ -143,11 +144,12 @@ def get_sj_vacancies(languages, headers):
                 page += 1
                 time.sleep(0.5)
 
-        stats[lang] = get_stats(
-            all_pages_vacancies, found, predict_rub_salary_sj
-        )
+        found_vacancies[lang] = {
+            'vacancies': all_pages_vacancies,
+            'found': found
+        }
 
-    return stats
+    return found_vacancies
 
 
 def get_table(stats, title):
@@ -186,11 +188,28 @@ if __name__ == '__main__':
         'C#',
         'Go'
     ]
+
     headers = {'User-Agent': 'My-App/1.0 (runcken@gmail.com)'}
-    stats = get_hh_vacancies(languages, headers)
-    title = 'HeadHunter Moscow'
-    print(get_table(stats, title))
+    hh_found_vacancies = get_hh_vacancies(languages, headers)
+    hh_stats = {}
+    for lang, data in hh_found_vacancies.items():
+        hh_stats[lang] = get_stats(
+            data['vacancies'],
+            data['found'],
+            predict_rub_salary_hh
+        )
+    hh_title = 'HeadHunter Moscow'
+
     headers = {'X-Api-App-Id': env.str('SJ_KEY')}
-    stats = get_sj_vacancies(languages, headers)
-    title = 'SuperJob Moscow'
-    print(get_table(stats, title))
+    sj_found_vacancies = get_sj_vacancies(languages, headers)
+    sj_stats = {}
+    for lang, data in sj_found_vacancies.items():
+        sj_stats[lang] = get_stats(
+            data['vacancies'],
+            data['found'],
+            predict_rub_salary_sj
+        )
+    sj_title = 'SuperJob Moscow'
+
+    print(get_table(hh_stats, hh_title))
+    print(get_table(sj_stats, sj_title))
